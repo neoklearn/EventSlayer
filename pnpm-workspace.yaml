@@ -1,0 +1,8 @@
+allowBuilds:
+  sharp: set this to true or false
+  unrs-resolver: set this to true or false
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver
+minimumReleaseAgeExclude:
+  - '@google/genai@2.5.0'

@@ -24,19 +24,10 @@ Event Slayer adalah platform web agregator dan manajemen jadwal event pop cultur
 
 ---
 
-## Spesifikasi Desain & Estetika (Design System)
-
-Proyek ini wajib mematuhi cetak biru yang ada pada dokumen `Design.md`:
-* **Palet Warna:** Hitam pekat (`#000000`), putih murni (`#FFFFFF`), dan skala abu-abu tegas (`zinc`/`slate`).
-* **Gaya Pembatas:** Menggunakan garis tipis 1px (`border-zinc-200` atau `border-zinc-800`) tanpa *border-radius* di seluruh elemen kotak UI.
-* **Tipografi:** Font Sans-serif tebal untuk judul utama/header dan font Monospace untuk elemen data teknis, tanggal, label, dan string kecil.
-
----
-
 ## Teknologi yang Digunakan
 
 * **Framework:** Next.js (App Router)
-* **Bahasa Pemrograman:** JavaScript murni (.jsx / .js) - *TypeScript dinonaktifkan*
+* **Bahasa Pemrograman:** JavaScript murni (.jsx / .js)
 * **Styling:** Tailwind CSS (dengan PostCSS)
 * **Komponen & UI:** Konfigurasi shadcn/ui custom (bersudut tajam)
 * **Package Manager:** pnpm
@@ -55,7 +46,7 @@ npm install -g pnpm
 ### 1. Kloning Repositori
 
 ```bash
-git clone [https://github.com/username/event-slayer.git](https://github.com/username/event-slayer.git)
+git clone https://github.com/neoklearn/EventSlayer
 cd event-slayer
 
 ```
@@ -86,12 +77,22 @@ Buka [http://localhost:3000](https://www.google.com/search?q=http://localhost:30
 
 ```text
 ├── app/
-│   ├── layout.js       # Root Layout utama aplikasi (.js/.jsx)
-│   ├── page.js         # Halaman utama Dashboard
-│   └── globals.css     # Konfigurasi Tailwind & base styling
-├── components/         # Komponen UI modular (Navigation, Calendar, dll)
-├── components.json     # Konfigurasi instalasi komponen v0/shadcn
-├── design.md           # Panduan token visual desain monokrom
-├── package.json        # Manifest file dan daftar package dependensi
-└── pnpm-lock.yaml      # Lockfile pnpm untuk konsistensi versi package
+│   ├── api/
+│   │   ├── events/route.js        # API CRUD Event
+│   │   └── parse-event/route.js   # API Parse Data AI
+│   ├── management/page.jsx        # Halaman Input & Panel Admin (Full-width)
+│   ├── schedule/page.jsx          # Halaman Kalender & Timeline Jadwal
+│   ├── globals.css                # Konfigurasi Tailwind & base styling
+│   ├── layout.js                  # Root Layout Utama aplikasi
+│   └── page.jsx                   # Halaman Utama Dashboard (Hero Section)
+├── components/
+│   └── Navbar.jsx                 # Bar Navigasi Responsif Horizontal
+├── lib/
+│   └── prisma.js                  # Instansiasi Prisma Client
+├── prisma/
+│   ├── dev.db                     # Database Lokal SQLite
+│   └── schema.prisma              # Skema Tabel Database (Event, Admin, dll)
+├── public/                        # Aset Statis SVG & Gambar
+├── jsconfig.json                  # Konfigurasi Path Mapping JavaScript
+└── package.json                   # Manifest Dependensi & Script Project
 ```

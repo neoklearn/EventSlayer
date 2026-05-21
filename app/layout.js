@@ -22,8 +22,9 @@ export default function RootLayout({ children }) {
     <html
       lang="en"
       className={`${spaceGrotesk.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-white text-black dark:bg-black dark:text-white transition-colors duration-200">
+      <body className="min-h-full flex flex-col bg-white text-black dark:bg-black dark:text-white">
         <Navbar />
         <main className="flex-1 flex flex-col">{children}</main>
         {/* Simple Monochrome Footer */}

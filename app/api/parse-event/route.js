@@ -1,12 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
 
-// Fallback to local env variables if needed
 const apiKey = process.env.GEMINI_API_KEY;
 
 export async function POST(req) {
   try {
-    const { rawCaption, sourceUrl } = await req.json();
+    const { rawCaption } = await req.json();
 
     if (!rawCaption) {
       return NextResponse.json(
@@ -17,67 +16,41 @@ export async function POST(req) {
 
     if (!apiKey) {
       return NextResponse.json(
-        {
-          status: "mock",
-          is_anime_event: true,
-          event_data: {
-            title: "[MOCK EVENT] Cosplay Festival Bandung 2026",
-            description: "Silakan masukkan GEMINI_API_KEY di file .env untuk mengaktifkan AI asli. Ini adalah data demo.",
-            location_name: "Bandung Electronic Center (BEC)",
-            start_date: "2026-06-15",
-            end_date: "2026-06-16",
-            source_url: sourceUrl || ""
-          }
-        }
+        { status: "error", message: "GEMINI_API_KEY is not configured" },
+        { status: 500 }
       );
     }
 
-    const ai = new GoogleGenAI({ apiKey: apiKey });
+    const ai = new GoogleGenAI({ apiKey });
+    const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: `Ekstrak caption Instagram berikut ini:\n\n${rawCaption}`,
-      config: {
-        systemInstruction:
-          "Kamu adalah Event Slayer Analyzer, asisten AI yang bertugas mengekstrak dan merapikan informasi event anime dari teks caption media sosial (Instagram) menjadi data terstruktur JSON yang siap dimasukkan ke database.\n\n" +
-          "Aturan Output:\n" +
-          "1. Fokus Konten: Hanya proses event anime, jejepangan, cosplay, dan pop culture. Set is_anime_event = false jika caption bukan event komunitas jejepangan.\n" +
-          "2. Ekstraksi Tanggal: Ubah format tanggal menjadi ISO Standar (YYYY-MM-DD). Jika tahun tidak disebutkan, asumsikan tahun 2026.\n" +
-          "3. Ekstraksi Lokasi: Ambil nama tempat spesifik.\n" +
-          "4. Ekstraksi HTM: Ambil informasi harga tiket masuk jika ada (misal: Gratis, 25k, 50k). Jika tidak ada, isi dengan 'Belum Tersedia'.\n" +
-          "5. Bahasa: Gunakan Bahasa Indonesia yang jelas dan informatif untuk deskripsi.\n" +
-          "6. KOTA BANDUNG ONLY: Khususkan hanya untuk event di wilayah Bandung dan sekitarnya. Jika event di luar Bandung, set is_anime_event = false.",
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "OBJECT",
-          properties: {
-            status: { type: "STRING" },
-            is_anime_event: { type: "BOOLEAN" },
-            event_data: {
-              type: "OBJECT",
-              properties: {
-                title: { type: "STRING" },
-                description: { type: "STRING" },
-                location_name: { type: "STRING" },
-                start_date: { type: "STRING" },
-                end_date: { type: "STRING" },
-                htm: { type: "STRING" },
-              },
-              required: ["title", "location_name", "start_date"],
-            },
-          },
-          required: ["is_anime_event"],
-        },
-      },
-    });
-
-    const result = JSON.parse(response.text);
-
-    if (result.event_data) {
-      result.event_data.source_url = sourceUrl || "";
+    const prompt = `Analisis teks berikut dan ekstrak detail event pop-culture (anime, cosplay, jejepangan). 
+    Kembalikan data dalam format JSON murni tanpa markdown.
+    Gunakan skema berikut:
+    {
+      "title": "Nama Event",
+      "description": "Deskripsi singkat yang rapi",
+      "location_name": "Nama Tempat Spesifik",
+      "start_date": "YYYY-MM-DD",
+      "end_date": "YYYY-MM-DD",
+      "time": "HH:MM - HH:MM",
+      "htm": "Harga Tiket atau Gratis"
     }
 
-    return NextResponse.json(result);
+    Jika tahun tidak disebutkan, asumsikan 2026.
+    Teks: ${rawCaption}`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text().replace(/```json|```/g, "").trim();
+    
+    const eventData = JSON.parse(text);
+
+    return NextResponse.json({ 
+      status: "success", 
+      is_anime_event: true,
+      event_data: eventData 
+    });
   } catch (error) {
     return NextResponse.json(
       { status: "error", message: error.message },

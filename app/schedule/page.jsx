@@ -102,21 +102,21 @@ export default function Schedule() {
           className={`border border-black dark:border-white min-h-[150px] p-2 relative group cursor-pointer overflow-hidden ${dayEvents.length > 0 ? "bg-zinc-50 dark:bg-zinc-900" : ""}`}
           onClick={() => dayEvents.length > 0 && setSelectedEvent(dayEvents[0])}
         >
-          <span className="font-mono text-xs font-bold">{d}</span>
+          <span className="font-mono text-xs font-bold relative z-10">{d}</span>
           
           {dayEvents.length > 0 && (
             <div className="absolute inset-0 z-0">
-              {/* Poster Simulation (Grayscale to Color) */}
-              <div className="w-full h-full bg-zinc-200 dark:bg-zinc-800 grayscale group-hover:grayscale-0 transition-all duration-300 opacity-40 group-hover:opacity-100 flex items-center justify-center p-4">
-                 <div className="text-center">
-                    <div className="font-sans text-[10px] font-black uppercase leading-tight line-clamp-3">{dayEvents[0].title}</div>
-                 </div>
-              </div>
+              <img 
+                src={dayEvents[0].posterUrl || "/placeholder.svg"} 
+                alt={dayEvents[0].title}
+                className="object-cover w-full h-full grayscale group-hover:grayscale-0 transition-all duration-300 opacity-40 group-hover:opacity-100"
+                style={{ objectPosition: `${dayEvents[0].cropX}% ${dayEvents[0].cropY}%` }}
+              />
             </div>
           )}
           
           {dayEvents.length > 1 && (
-            <div className="absolute bottom-2 right-2 bg-black text-white px-1 font-mono text-[8px] dark:bg-white dark:text-black">
+            <div className="absolute bottom-2 right-2 bg-black text-white px-1 font-mono text-[8px] dark:bg-white dark:text-black z-10">
               +{dayEvents.length - 1} MORE
             </div>
           )}
@@ -188,14 +188,14 @@ export default function Schedule() {
             ) : (
               events.map((event, idx) => (
                 <div key={event.id} className="border border-black dark:border-white bg-white dark:bg-black overflow-hidden flex flex-col">
-                  {/* Poster (Grayscale to Color on Press/Click) */}
-                  <div 
-                    className="h-64 bg-zinc-200 dark:bg-zinc-800 grayscale active:grayscale-0 transition-all duration-300 relative overflow-hidden"
-                    onClick={() => {}} // Just to trigger CSS active state
-                  >
-                    <div className="absolute inset-0 flex items-center justify-center opacity-30">
-                       <span className="font-mono text-4xl font-black uppercase tracking-widest">POSTER</span>
-                    </div>
+                  {/* Poster */}
+                  <div className="h-64 relative overflow-hidden bg-zinc-200 dark:bg-zinc-800">
+                    <img 
+                      src={event.posterUrl || "/placeholder.svg"} 
+                      alt={event.title}
+                      className="object-cover w-full h-full grayscale active:grayscale-0 transition-all duration-300"
+                      style={{ objectPosition: `${event.cropX}% ${event.cropY}%` }}
+                    />
                     <div className="absolute top-4 left-4 bg-black text-white px-2 py-1 font-mono text-[10px] dark:bg-white dark:text-black">
                       #{String(idx + 1).padStart(2, '0')}
                     </div>
@@ -234,8 +234,12 @@ export default function Schedule() {
           <div className="relative bg-white dark:bg-black border-2 border-black dark:border-white w-full max-w-5xl h-auto max-h-[90vh] flex overflow-hidden">
             {/* Left: Poster Full Color */}
             <div className="w-1/2 bg-zinc-100 dark:bg-zinc-900 border-r-2 border-black dark:border-white relative flex items-center justify-center overflow-hidden">
-               <span className="font-mono text-4xl font-black opacity-10 uppercase tracking-[1em]">FULL POSTER</span>
-               <div className="absolute inset-0 bg-gradient-to-br from-zinc-200/50 to-zinc-400/50 mix-blend-multiply" />
+               <img 
+                 src={selectedEvent.posterUrl || "/placeholder.svg"} 
+                 alt={selectedEvent.title}
+                 className="object-cover w-full h-full"
+                 style={{ objectPosition: `${selectedEvent.cropX}% ${selectedEvent.cropY}%` }}
+               />
             </div>
 
             {/* Right: Info */}

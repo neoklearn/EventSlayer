@@ -5,7 +5,7 @@ import path from "path";
 import crypto from "crypto";
 import { unstable_cache, revalidateTag } from "next/cache";
 
-const ADMIN_TOKEN = "ADMIN123";
+const ADMIN_TOKEN = process.env.ADMIN_PASSWORD;
 
 const getCachedEvents = unstable_cache(
   async (isAdmin) => {
@@ -24,7 +24,8 @@ const getCachedEvents = unstable_cache(
 );
 
 function isAuthorized(req, formData) {
-  const headerToken = req.headers.get("x-admin-token");
+  if (!ADMIN_TOKEN) return false;
+  const headerToken = req.headers.get("x-admin-token") || req.headers.get("Authorization")?.replace("Bearer ", "");
   const fieldToken = formData ? formData.get("x-admin-token") : null;
   return headerToken === ADMIN_TOKEN || fieldToken === ADMIN_TOKEN;
 }

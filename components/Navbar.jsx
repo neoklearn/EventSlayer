@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, Sparkles } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -22,11 +23,22 @@ export default function Navbar() {
           {/* Logo Brand - Left */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center gap-2 group">
-              <div className="bg-black text-white p-2 border border-black group-hover:bg-white group-hover:text-black transition-all duration-0 dark:bg-white dark:text-black dark:group-hover:bg-black dark:group-hover:text-white">
-                <Sparkles className="h-6 w-6" />
+              {/* Bagian Icon diubah menggunakan Next Image */}
+              <div className="p-1 transition-all duration-0">
+                <Image
+                  src="/logo.ico" // Tambahkan tanda '/' di awal dan hapus 'app'
+                  alt="Event Slayer Logo"
+                  width={32}
+                  height={32}
+                  className="h-8 w-8 object-contain"
+                />
               </div>
+
               <span className="font-mono text-2xl font-black tracking-tighter uppercase">
-                EVENT<span className="bg-black text-white px-1.5 py-0.5 ml-1 dark:bg-white dark:text-black">SLAYER</span>
+                EVENT
+                <span className="bg-black text-white px-1.5 py-0.5 ml-1 dark:bg-white dark:text-black">
+                  SLAYER
+                </span>
               </span>
             </Link>
           </div>
@@ -41,13 +53,21 @@ export default function Navbar() {
                   href={link.href}
                   className={`font-mono text-sm font-bold tracking-widest relative py-2 group`}
                 >
-                  <span className={isActive ? "text-black dark:text-white" : "text-zinc-500 dark:text-zinc-400 group-hover:text-black dark:group-hover:text-white"}>
+                  <span
+                    className={
+                      isActive
+                        ? "text-black dark:text-white"
+                        : "text-zinc-500 dark:text-zinc-400 group-hover:text-black dark:group-hover:text-white"
+                    }
+                  >
                     {link.name}
                   </span>
                   {/* Manga-panel border-line indicator */}
                   <span
                     className={`absolute bottom-0 left-0 w-full h-[3px] bg-black dark:bg-white transform transition-transform duration-0 ${
-                      isActive ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+                      isActive
+                        ? "scale-x-100"
+                        : "scale-x-0 group-hover:scale-x-100"
                     }`}
                   />
                 </Link>
@@ -62,7 +82,11 @@ export default function Navbar() {
               className="border border-black p-2 hover:bg-black hover:text-white transition-all duration-0 dark:border-white dark:hover:bg-white dark:hover:text-black"
               aria-label="Toggle Navigation Menu"
             >
-              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
             </button>
           </div>
         </div>
@@ -83,7 +107,9 @@ export default function Navbar() {
                 href={link.href}
                 onClick={() => setIsOpen(false)}
                 className={`font-mono text-sm font-bold tracking-widest border-b border-black pb-4 block dark:border-white ${
-                  isActive ? "text-black dark:text-white" : "text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white"
+                  isActive
+                    ? "text-black dark:text-white"
+                    : "text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white"
                 }`}
               >
                 {link.name}

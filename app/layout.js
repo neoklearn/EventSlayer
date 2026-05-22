@@ -30,7 +30,7 @@ export default function RootLayout({ children }) {
         {/* Simple Monochrome Footer */}
         <footer className="w-full bg-white border-t border-black py-8 select-none dark:bg-black dark:border-white">
           <div className="max-w-7xl mx-auto px-4 text-center font-mono text-xs font-bold tracking-widest text-zinc-500 dark:text-zinc-400 uppercase" suppressHydrationWarning>
-            &copy; {new Date().getFullYear()} EVENT SLAYER. SHARP BORDERS & MONOCHROME SPECIFICATION.
+            &copy; {new Date().getFullYear()} EVENT SLAYER DEVELOPER TEAM. ALL RIGHTS RESERVED.
           </div>
         </footer>
       </body>

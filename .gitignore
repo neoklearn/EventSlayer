@@ -1,4 +1,4 @@
-# dependencies
+# Dependencies
 /node_modules
 /.pnp
 .pnp.*
@@ -8,38 +8,46 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
-
-# next.js
+# Next.js Build Output & Cache
 /.next/
 /out/
-
-# production
 /build
 
-# local development database (Prisma + SQLite)
-prisma/*.db
+# Production Readiness
+.vercel
 
-# local media assets & uploads
-public/uploads/*
-!public/uploads/.gitkeep
+# Local Development Database
+*.db
+*.db-journal
+/prisma/*.db
+/prisma/*.db-journal
 
-# environment variables & private keys
+# Environment Variables & Secrets
 .env
 .env.local
+.env.production
 .env.development.local
 .env.test.local
 .env.production.local
 *.pem
 
-# misc & debug logs
+# Local Media Assets & Uploads
+/public/uploads/*
+!/public/uploads/.gitkeep
+
+# Operating System Metadata
 .DS_Store
+Thumbs.db
+desktop.ini
+
+# Debug Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# typescript configuration residuals
+# Infrastructure & Tools
+.idea/
+.vscode/
 *.tsbuildinfo
 next-env.d.ts

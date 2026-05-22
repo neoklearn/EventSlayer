@@ -99,18 +99,19 @@ export default function Schedule() {
       days.push(
         <div 
           key={d} 
-          className={`border border-black dark:border-white min-h-[150px] p-2 relative group cursor-pointer overflow-hidden ${dayEvents.length > 0 ? "bg-zinc-50 dark:bg-zinc-900" : ""}`}
+          className={`border border-black dark:border-white aspect-square p-2 relative group cursor-pointer overflow-hidden ${dayEvents.length > 0 ? "bg-zinc-50 dark:bg-zinc-900" : ""}`}
           onClick={() => dayEvents.length > 0 && setSelectedEvent(dayEvents[0])}
         >
           <span className="font-mono text-xs font-bold relative z-10">{d}</span>
           
           {dayEvents.length > 0 && (
-            <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 z-0 bg-zinc-100 dark:bg-zinc-900">
               <img 
                 src={dayEvents[0].posterUrl || "/placeholder.svg"} 
                 alt={dayEvents[0].title}
                 className="object-cover w-full h-full grayscale group-hover:grayscale-0 transition-all duration-300 opacity-40 group-hover:opacity-100"
-                style={{ objectPosition: `${dayEvents[0].cropX}% ${dayEvents[0].cropY}%` }}
+                style={{ objectPosition: `${dayEvents[0].cropX || 50}% ${dayEvents[0].cropY || 50}%` }}
+                onError={(e) => { e.target.src = "/placeholder.svg"; }}
               />
             </div>
           )}
@@ -259,7 +260,7 @@ export default function Schedule() {
                   {selectedEvent.title}
                 </h2>
                 <div className="space-y-6 mb-12">
-                  <div className="flex items-center gap-3 font-mono text-sm font-bold" suppressHydrationWarning>
+                  <div className="flex items-center gap-3 font-mono text-sm font-bold" suppressHydrationWarning={true}>
                     <CalendarIcon className="h-5 w-5" /> {formatDate(selectedEvent.start_date)}
                   </div>
                   <div className="flex items-center gap-3 font-mono text-sm font-bold">

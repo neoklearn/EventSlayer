@@ -47,6 +47,8 @@ export default function Management() {
     setEditingEvent(null);
     setSelectedFile(null);
     setPreviewUrl(null);
+    setRawCaption("");
+    setPublicForm({ title: "", date: "", location: "", source: "" });
     setMessage({ type: "info", text: "Sesi admin berakhir demi keamanan." });
   }, []);
 
@@ -90,7 +92,7 @@ export default function Management() {
         setEvents(data.data);
       }
     } catch (err) {
-      console.error("Events fetch failed", err);
+      // Error handled via silent failure for production stability
     } finally {
       setLoadingEvents(false);
     }
@@ -175,16 +177,26 @@ export default function Management() {
     }
   };
 
-  const handleAdminAuth = (e) => {
+  const handleAdminAuth = async (e) => {
     e.preventDefault();
-    if (password === "ADMIN123") {
-      setIsAdmin(true);
-      setShowPasswordModal(false);
-      // Keep password for session usage
-      setTimeLeft(300);
-      setMessage({ type: "success", text: "Akses Admin Diberikan." });
-    } else {
-      setMessage({ type: "error", text: "Kata sandi salah." });
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password })
+      });
+      const data = await res.json();
+
+      if (data.status === "success" && data.authenticated) {
+        setIsAdmin(true);
+        setShowPasswordModal(false);
+        setTimeLeft(300);
+        setMessage({ type: "success", text: "Akses Admin Diberikan." });
+      } else {
+        setMessage({ type: "error", text: "Kata sandi salah." });
+      }
+    } catch (err) {
+      setMessage({ type: "error", text: "Gagal menghubungkan ke server." });
     }
   };
 
@@ -193,11 +205,10 @@ export default function Management() {
       const formData = new FormData();
       formData.append("id", id);
       formData.append("approved", "true");
-      formData.append("x-admin-token", "ADMIN123");
 
       const res = await fetch("/api/events", {
         method: "PUT",
-        headers: { "x-admin-token": "ADMIN123" },
+        headers: { "x-admin-token": password },
         body: formData
       });
       if (res.ok) {
@@ -214,7 +225,7 @@ export default function Management() {
     try {
       const res = await fetch(`/api/events?id=${id}`, { 
         method: "DELETE",
-        headers: { "x-admin-token": "ADMIN123" }
+        headers: { "x-admin-token": password }
       });
       if (res.ok) {
         setMessage({ type: "success", text: "Event berhasil dihapus." });
@@ -242,11 +253,10 @@ export default function Management() {
       if (selectedFile) {
         formData.append("poster", selectedFile);
       }
-      formData.append("x-admin-token", "ADMIN123");
 
       const res = await fetch("/api/events", {
         method: "PUT",
-        headers: { "x-admin-token": "ADMIN123" },
+        headers: { "x-admin-token": password },
         body: formData
       });
       if (res.ok) {

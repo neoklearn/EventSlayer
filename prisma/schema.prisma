@@ -18,6 +18,7 @@ model Event {
   start_date    String   // ISO YYYY-MM-DD
   end_date      String   // ISO YYYY-MM-DD
   time          String   @default("10:00 - 18:00") // Time of the event (e.g. "10:00 - selesai")
+  htm           String   @default("Gratis / Belum Tersedia") // Harga Tiket Masuk
   source_url    String?
   approved      Boolean  @default(false)          // Management panel approval gate
   createdAt     DateTime @default(now())

@@ -44,8 +44,9 @@ export async function POST(req) {
           "1. Fokus Konten: Hanya proses event anime, jejepangan, cosplay, dan pop culture. Set is_anime_event = false jika caption bukan event komunitas jejepangan.\n" +
           "2. Ekstraksi Tanggal: Ubah format tanggal menjadi ISO Standar (YYYY-MM-DD). Jika tahun tidak disebutkan, asumsikan tahun 2026.\n" +
           "3. Ekstraksi Lokasi: Ambil nama tempat spesifik.\n" +
-          "4. Bahasa: Gunakan Bahasa Indonesia yang jelas dan informatif untuk deskripsi.\n" +
-          "5. KOTA BANDUNG ONLY: Khususkan hanya untuk event di wilayah Bandung dan sekitarnya. Jika event di luar Bandung, set is_anime_event = false.",
+          "4. Ekstraksi HTM: Ambil informasi harga tiket masuk jika ada (misal: Gratis, 25k, 50k). Jika tidak ada, isi dengan 'Belum Tersedia'.\n" +
+          "5. Bahasa: Gunakan Bahasa Indonesia yang jelas dan informatif untuk deskripsi.\n" +
+          "6. KOTA BANDUNG ONLY: Khususkan hanya untuk event di wilayah Bandung dan sekitarnya. Jika event di luar Bandung, set is_anime_event = false.",
         responseMimeType: "application/json",
         responseSchema: {
           type: "OBJECT",
@@ -60,6 +61,7 @@ export async function POST(req) {
                 location_name: { type: "STRING" },
                 start_date: { type: "STRING" },
                 end_date: { type: "STRING" },
+                htm: { type: "STRING" },
               },
               required: ["title", "location_name", "start_date"],
             },

@@ -261,6 +261,10 @@ export default function Schedule() {
                   <div className="flex items-center gap-3 font-mono text-sm font-bold">
                     <MapPin className="h-5 w-5" /> {selectedEvent.location_name}
                   </div>
+                  <div className="flex items-center gap-3 font-mono text-sm font-bold">
+                    <div className="bg-black text-white px-1.5 py-0.5 text-[10px] dark:bg-white dark:text-black uppercase">HTM</div>
+                    {selectedEvent.htm || "Gratis / Belum Tersedia"}
+                  </div>
                 </div>
                 
                 <div className="border-t border-black pt-6 dark:border-white">

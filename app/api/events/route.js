@@ -27,7 +27,7 @@ export async function GET(req) {
 // Save a new event to the database
 export async function POST(req) {
   try {
-    const { title, description, location_name, start_date, end_date, source_url } = await req.json();
+    const { title, description, location_name, start_date, end_date, htm, source_url } = await req.json();
 
     if (!title || !location_name || !start_date || !end_date) {
       return NextResponse.json(
@@ -43,6 +43,7 @@ export async function POST(req) {
         location_name,
         start_date,
         end_date,
+        htm: htm || "Gratis / Belum Tersedia",
         source_url: source_url || "",
       },
     });
@@ -67,6 +68,9 @@ export async function PUT(req) {
         { status: 400 }
       );
     }
+
+    // Ensure we don't accidentally update id
+    delete updateData.id;
 
     const updatedEvent = await prisma.event.update({
       where: { id },

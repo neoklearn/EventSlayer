@@ -24,8 +24,9 @@ export default function Management() {
   });
 
   // Admin Dashboard States
-  const [queue, setQueue] = useState([]);
-  const [loadingQueue, setLoadingQueue] = useState(false);
+  const [activeTab, setActiveTab] = useState("queue"); // "queue" or "live"
+  const [events, setEvents] = useState([]);
+  const [loadingEvents, setLoadingEvents] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [rawCaption, setRawCaption] = useState("");
@@ -36,6 +37,7 @@ export default function Management() {
   const resetSession = useCallback(() => {
     setIsAdmin(false);
     setPassword("");
+    setEditingEvent(null);
     setMessage({ type: "info", text: "Sesi admin berakhir demi keamanan." });
   }, []);
 
@@ -66,23 +68,23 @@ export default function Management() {
   }, [isAdmin, resetSession]);
 
   // 2. Data Fetching
-  const fetchQueue = async () => {
-    setLoadingQueue(true);
+  const fetchEvents = async () => {
+    setLoadingEvents(true);
     try {
       const res = await fetch("/api/events");
       const data = await res.json();
       if (data.status === "success") {
-        setQueue(data.data);
+        setEvents(data.data);
       }
     } catch (err) {
-      console.error("Queue fetch failed", err);
+      console.error("Events fetch failed", err);
     } finally {
-      setLoadingQueue(false);
+      setLoadingEvents(false);
     }
   };
 
   useEffect(() => {
-    if (isAdmin) fetchQueue();
+    if (isAdmin) fetchEvents();
   }, [isAdmin]);
 
   // 3. Actions
@@ -133,7 +135,7 @@ export default function Management() {
       });
       if (res.ok) {
         setMessage({ type: "success", text: "Event diterbitkan!" });
-        fetchQueue();
+        fetchEvents();
       }
     } catch (err) {
       setMessage({ type: "error", text: "Gagal menyetujui event." });
@@ -141,15 +143,34 @@ export default function Management() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Hapus event ini?")) return;
+    if (!confirm("Hapus event ini secara permanen?")) return;
     try {
       const res = await fetch(`/api/events?id=${id}`, { method: "DELETE" });
       if (res.ok) {
-        setMessage({ type: "success", text: "Event dihapus." });
-        fetchQueue();
+        setMessage({ type: "success", text: "Event berhasil dihapus." });
+        if (editingEvent?.id === id) setEditingEvent(null);
+        fetchEvents();
       }
     } catch (err) {
       setMessage({ type: "error", text: "Gagal menghapus event." });
+    }
+  };
+
+  const handleUpdateEvent = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/events", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editingEvent)
+      });
+      if (res.ok) {
+        setMessage({ type: "success", text: "Perubahan berhasil disimpan!" });
+        setEditingEvent(null);
+        fetchEvents();
+      }
+    } catch (err) {
+      setMessage({ type: "error", text: "Gagal menyimpan perubahan." });
     }
   };
 
@@ -173,8 +194,10 @@ export default function Management() {
         if (saveRes.ok) {
           setMessage({ type: "success", text: "AI berhasil mengekstrak data ke antrean." });
           setRawCaption("");
-          fetchQueue();
+          fetchEvents();
         }
+      } else {
+        setMessage({ type: "error", text: "AI tidak menemukan data event anime yang valid." });
       }
     } catch (err) {
       setMessage({ type: "error", text: "AI Gagal memproses data." });
@@ -182,6 +205,10 @@ export default function Management() {
       setScanning(false);
     }
   };
+
+  const filteredEvents = events.filter(item => 
+    activeTab === "queue" ? !item.approved : item.approved
+  );
 
   return (
     <div className="flex-1 w-full bg-white text-black dark:bg-black dark:text-white select-none">
@@ -280,47 +307,146 @@ export default function Management() {
         ) : (
           /* ADMIN VIEW */
           <div className="space-y-16">
-            {/* AI Scan Tool for Admin */}
-            <div className="border border-black p-8 dark:border-white bg-zinc-50 dark:bg-zinc-900">
-               <div className="flex justify-between items-center border-b border-black pb-4 mb-6 dark:border-white">
-                  <h3 className="font-mono text-sm font-black tracking-widest uppercase flex items-center gap-2">
-                    <Sparkles className="h-4 w-4" /> AI Scanner Center
-                  </h3>
-                  <div className="h-3 w-3 bg-black dark:bg-white" />
-               </div>
-               <form onSubmit={handleScan} className="flex flex-col md:flex-row gap-4">
-                  <textarea 
-                    value={rawCaption} onChange={e => setRawCaption(e.target.value)}
-                    placeholder="Tempel Caption Instagram untuk ekstraksi otomatis..."
-                    className="flex-1 border border-black p-4 font-mono text-xs outline-none focus:ring-1 focus:ring-black dark:border-white dark:bg-black"
-                    rows={1}
-                  />
-                  <button disabled={scanning} className="bg-black text-white px-8 py-4 font-mono text-xs font-bold border border-black hover:bg-white hover:text-black dark:bg-white dark:text-black dark:border-white dark:hover:bg-black dark:hover:text-white transition-all shrink-0">
-                    {scanning ? "PROCESSING..." : "RUN SCANNER"}
-                  </button>
-               </form>
+            
+            {/* Editor / Scanner Area */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+              {/* Left: AI Scanner Tool */}
+              <div className="border border-black p-8 dark:border-white bg-zinc-50 dark:bg-zinc-900">
+                 <div className="flex justify-between items-center border-b border-black pb-4 mb-6 dark:border-white">
+                    <h3 className="font-mono text-sm font-black tracking-widest uppercase flex items-center gap-2">
+                      <Sparkles className="h-4 w-4" /> AI Scanner Center
+                    </h3>
+                    <div className="h-3 w-3 bg-black dark:bg-white" />
+                 </div>
+                 <form onSubmit={handleScan} className="space-y-4">
+                    <textarea 
+                      value={rawCaption} onChange={e => setRawCaption(e.target.value)}
+                      placeholder="Tempel Caption Instagram untuk ekstraksi otomatis..."
+                      className="w-full border border-black p-4 font-mono text-xs outline-none focus:ring-1 focus:ring-black dark:border-white dark:bg-black min-h-[150px]"
+                    />
+                    <button disabled={scanning} className="w-full bg-black text-white px-8 py-4 font-mono text-xs font-bold border border-black hover:bg-white hover:text-black dark:bg-white dark:text-black dark:border-white dark:hover:bg-black dark:hover:text-white transition-all">
+                      {scanning ? "PROCESSING..." : "RUN SCANNER"}
+                    </button>
+                 </form>
+              </div>
+
+              {/* Right: Manual Editor Form */}
+              <div className="border-4 border-black p-8 dark:border-white">
+                 <div className="flex justify-between items-center border-b border-black pb-4 mb-6 dark:border-white">
+                    <h3 className="font-mono text-sm font-black tracking-widest uppercase flex items-center gap-2">
+                      <Edit3 className="h-4 w-4" /> {editingEvent ? "EDIT EVENT" : "EVENT EDITOR"}
+                    </h3>
+                    {editingEvent && (
+                      <button onClick={() => setEditingEvent(null)} className="font-mono text-[10px] underline uppercase">Cancel Edit</button>
+                    )}
+                 </div>
+                 
+                 {editingEvent ? (
+                   <form onSubmit={handleUpdateEvent} className="space-y-4">
+                      <div className="grid grid-cols-1 gap-4">
+                        <div>
+                          <label className="font-mono text-[8px] font-bold uppercase mb-1 block">Title</label>
+                          <input 
+                            type="text" required value={editingEvent.title}
+                            onChange={e => setEditingEvent({...editingEvent, title: e.target.value})}
+                            className="w-full border border-black p-2 font-mono text-xs outline-none dark:border-white dark:bg-black"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="font-mono text-[8px] font-bold uppercase mb-1 block">Start Date</label>
+                            <input 
+                              type="date" required value={editingEvent.start_date}
+                              onChange={e => setEditingEvent({...editingEvent, start_date: e.target.value})}
+                              className="w-full border border-black p-2 font-mono text-xs outline-none dark:border-white dark:bg-black"
+                            />
+                          </div>
+                          <div>
+                            <label className="font-mono text-[8px] font-bold uppercase mb-1 block">End Date</label>
+                            <input 
+                              type="date" required value={editingEvent.end_date}
+                              onChange={e => setEditingEvent({...editingEvent, end_date: e.target.value})}
+                              className="w-full border border-black p-2 font-mono text-xs outline-none dark:border-white dark:bg-black"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="font-mono text-[8px] font-bold uppercase mb-1 block">Location</label>
+                          <input 
+                            type="text" required value={editingEvent.location_name}
+                            onChange={e => setEditingEvent({...editingEvent, location_name: e.target.value})}
+                            className="w-full border border-black p-2 font-mono text-xs outline-none dark:border-white dark:bg-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="font-mono text-[8px] font-bold uppercase mb-1 block">HTM / Tiket</label>
+                          <input 
+                            type="text" required value={editingEvent.htm}
+                            onChange={e => setEditingEvent({...editingEvent, htm: e.target.value})}
+                            className="w-full border border-black p-2 font-mono text-xs outline-none dark:border-white dark:bg-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="font-mono text-[8px] font-bold uppercase mb-1 block">Description</label>
+                          <textarea 
+                            value={editingEvent.description}
+                            onChange={e => setEditingEvent({...editingEvent, description: e.target.value})}
+                            className="w-full border border-black p-2 font-mono text-xs outline-none dark:border-white dark:bg-black min-h-[80px]"
+                          />
+                        </div>
+                      </div>
+                      <button type="submit" className="w-full bg-black text-white py-4 font-mono text-xs font-bold border border-black hover:bg-white hover:text-black dark:bg-white dark:text-black dark:border-white dark:hover:bg-black dark:hover:text-white transition-all">
+                        [SIMPAN PERUBAHAN]
+                      </button>
+                   </form>
+                 ) : (
+                   <div className="py-20 text-center border border-dashed border-black dark:border-white opacity-30 flex flex-col items-center justify-center gap-4">
+                      <Search className="h-8 w-8" />
+                      <p className="font-mono text-[10px] uppercase max-w-[20ch]">Pilih event dari daftar di bawah untuk mengedit informasi.</p>
+                   </div>
+                 )}
+              </div>
             </div>
 
-            {/* Queue Table */}
+            {/* Tabs & Table */}
             <div>
-               <div className="border-b border-black pb-4 mb-8 dark:border-white flex items-center justify-between">
-                  <h3 className="font-sans text-3xl font-black uppercase tracking-tight">Antrean Approval</h3>
+               <div className="flex border-b-2 border-black dark:border-white mb-8">
+                  <button 
+                    onClick={() => setActiveTab("queue")}
+                    className={`px-8 py-4 font-mono text-xs font-black uppercase tracking-widest transition-all ${activeTab === "queue" ? "bg-black text-white dark:bg-white dark:text-black" : "hover:bg-zinc-100 dark:hover:bg-zinc-900"}`}
+                  >
+                    [ANTREAN SUBMISI]
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab("live")}
+                    className={`px-8 py-4 font-mono text-xs font-black uppercase tracking-widest transition-all ${activeTab === "live" ? "bg-black text-white dark:bg-white dark:text-black" : "hover:bg-zinc-100 dark:hover:bg-zinc-900"}`}
+                  >
+                    [EVENT AKTIF / LIVE]
+                  </button>
+               </div>
+
+               <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-sans text-3xl font-black uppercase tracking-tight">
+                    {activeTab === "queue" ? "Approval Queue" : "Live Database"}
+                  </h3>
                   <div className="flex items-center gap-4">
-                    <span className="font-mono text-[10px] font-bold text-zinc-500 uppercase">{queue.length} Total Records</span>
-                    <button onClick={fetchQueue} className="p-2 border border-black dark:border-white hover:bg-zinc-100 dark:hover:bg-zinc-800"><Clock className="h-4 w-4" /></button>
+                    <span className="font-mono text-[10px] font-bold text-zinc-500 uppercase">{filteredEvents.length} Records</span>
+                    <button onClick={fetchEvents} className="p-2 border border-black dark:border-white hover:bg-zinc-100 dark:hover:bg-zinc-800"><Clock className="h-4 w-4" /></button>
                   </div>
                </div>
 
-               {loadingQueue ? (
-                 <div className="py-20 text-center font-mono animate-pulse">RELOADING_QUEUE...</div>
+               {loadingEvents ? (
+                 <div className="py-20 text-center font-mono animate-pulse">RELOADING_DATA...</div>
                ) : (
-                 <div className="grid grid-cols-1 gap-4">
-                    {queue.map(item => (
-                      <div key={item.id} className={`border border-black dark:border-white p-6 flex flex-col md:flex-row justify-between items-center gap-6 ${item.approved ? "bg-white" : "bg-zinc-50 dark:bg-zinc-900"}`}>
+                 <div className="grid grid-cols-1 gap-1">
+                    {filteredEvents.map(item => (
+                      <div key={item.id} className={`border border-black dark:border-white p-6 flex flex-col md:flex-row justify-between items-center gap-6 ${editingEvent?.id === item.id ? "bg-zinc-100 dark:bg-zinc-800" : "bg-white dark:bg-black"}`}>
                         <div className="flex-1 w-full md:w-auto">
                            <div className="flex items-center gap-3 mb-2">
                               {!item.approved && <span className="bg-black text-white px-2 py-0.5 font-mono text-[8px] dark:bg-white dark:text-black font-bold">PENDING</span>}
                               <span className="font-mono text-[10px] text-zinc-500">{item.start_date}</span>
+                              <span className="font-mono text-[10px] text-zinc-400">|</span>
+                              <span className="font-mono text-[10px] text-zinc-500 uppercase">{item.htm}</span>
                            </div>
                            <h4 className="font-sans text-xl font-black uppercase tracking-tight">{item.title}</h4>
                            <p className="font-mono text-[10px] text-zinc-400 mt-1 uppercase truncate max-w-md">{item.location_name}</p>
@@ -332,12 +458,22 @@ export default function Management() {
                                <CheckCircle className="h-3 w-3" /> APPROVE
                              </button>
                            )}
-                           <button className="p-3 border border-black dark:border-white hover:bg-zinc-100 dark:hover:bg-zinc-800"><Edit3 className="h-4 w-4" /></button>
-                           <button onClick={() => handleDelete(item.id)} className="p-3 border border-black dark:border-white hover:bg-zinc-100 dark:hover:bg-zinc-800"><Trash2 className="h-4 w-4 text-zinc-400" /></button>
+                           <button 
+                            onClick={() => {
+                              setEditingEvent(item);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className={`p-3 border border-black dark:border-white transition-all ${editingEvent?.id === item.id ? "bg-black text-white dark:bg-white dark:text-black" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"}`}
+                           >
+                             <Edit3 className="h-4 w-4" />
+                           </button>
+                           <button onClick={() => handleDelete(item.id)} className="p-3 border border-black dark:border-white hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                             <Trash2 className="h-4 w-4 text-zinc-400 hover:text-red-500 transition-colors" />
+                           </button>
                         </div>
                       </div>
                     ))}
-                    {queue.length === 0 && <div className="py-20 text-center border border-dashed border-black dark:border-white font-mono text-xs opacity-50 uppercase">QUEUE_EMPTY</div>}
+                    {filteredEvents.length === 0 && <div className="py-20 text-center border border-dashed border-black dark:border-white font-mono text-xs opacity-50 uppercase">NO_RECORDS_FOUND</div>}
                  </div>
                )}
             </div>

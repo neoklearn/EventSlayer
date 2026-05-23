@@ -1,5 +1,7 @@
-import { GoogleGenAI } from "@google/genai";
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function POST(req) {
   try {
@@ -13,76 +15,82 @@ export async function POST(req) {
       );
     }
 
-    const { rawCaption } = await req.json();
+    const body = await req.json();
+    const promptText = body.rawCaption || body.promptText;
 
-    if (!rawCaption) {
+    if (!promptText) {
       return NextResponse.json(
-        { status: "error", message: "Caption is required" },
+        { status: "error", message: "Prompt text or raw caption is required" },
         { status: 400 }
       );
     }
 
-    const ai = new GoogleGenAI({ apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
     const modelsToTry = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-pro'];
     
-    const prompt = `Parse the following text and extract event information into JSON format.
-    
-    Required JSON Schema:
-    {
-      "title": "String (Short descriptive title)",
-      "date": "String (Event date, e.g., '24 Mei 2026')",
-      "time": "String (Operational hours, e.g., '10:00 - 18:00')",
-      "location": "String (Venue or address)",
-      "description": "String (Concise summary)",
-      "performers": ["Array of Strings (Guests, MCs, etc.)"],
-      "cropX": 50,
-      "cropY": 50
-    }
-
-    Input Text:
-    ${rawCaption}`;
+    const systemInstruction = `You are a strict, objective Data Extraction Engine. 
+    Your sole task is to parse the provided raw text description and map the information into a structured JSON object. 
+    Focus on anime event details: title, date, time, location, performers, mc, coswalk.
+    Always return the completed JSON object. If a piece of information is missing, set its value to null (or an empty array [] for performers). 
+    Do not invent fake data. Return strictly raw JSON without markdown blocks.`;
 
     let lastError = null;
+    let finalResultText = "";
 
-    for (const model of modelsToTry) {
+    for (const modelName of modelsToTry) {
       try {
-        const response = await ai.models.generateContent({
-          model: model,
-          contents: prompt,
-          config: {
-            systemInstruction: "You are a strict, objective Data Extraction Engine. Your sole task is to parse the provided raw text description and map the information into a structured JSON object. Do not judge, filter, or reject the input text based on its theme, category, or relevance. Whether it is an anime event, a general concert, a meeting, or random text, you MUST process it and always return the completed JSON object. If a piece of information is missing, set its value to null (or an empty array [] for performers). Do not invent fake data.",
-            responseMimeType: "application/json",
-            temperature: 0.1,
-          }
+        const model = genAI.getGenerativeModel({ 
+          model: modelName,
+          systemInstruction: systemInstruction
         });
 
-        let text = response.text;
+        const generationConfig = {
+          responseMimeType: "application/json",
+          temperature: 0.1,
+        };
+
+        const result = await model.generateContent({
+          contents: [{ role: "user", parts: [{ text: promptText }] }],
+          generationConfig,
+        });
+
+        const response = await result.response;
+        finalResultText = response.text();
         
-        if (text) {
-          // Robust Sanitization
-          text = text.replace(/```json/g, "").replace(/```/g, "").trim();
-          const eventData = JSON.parse(text);
-          
-          return NextResponse.json({ 
-            status: "success", 
-            event_data: eventData 
-          });
-        }
+        if (finalResultText) break;
       } catch (err) {
         lastError = err;
-        console.warn(`Model ${model} failed, trying next candidate...`);
+        console.warn(`Model ${modelName} failed, trying next candidate...`, err.message);
       }
     }
 
-    // If we reach here, all models have failed
-    console.error("All models in the array failed. Final trace:", lastError);
-    return NextResponse.json(
-      { status: "error", message: lastError?.message || "All fallback models failed" },
-      { status: 500 }
-    );
+    if (!finalResultText) {
+      console.error("All models in the array failed. Final trace:", lastError);
+      return NextResponse.json(
+        { status: "error", message: lastError?.message || "All fallback models failed" },
+        { status: 500 }
+      );
+    }
 
+    // JSON Sanitization & Output
+    let sanitizedText = finalResultText.trim();
+    sanitizedText = sanitizedText.replace(/```json/g, "").replace(/```/g, "").trim();
+
+    try {
+      const eventData = JSON.parse(sanitizedText);
+      return NextResponse.json({ 
+        status: "success", 
+        event_data: eventData 
+      });
+    } catch (parseError) {
+      console.error("JSON Parsing Error in parse-event:", parseError, "Raw response text:", sanitizedText);
+      return NextResponse.json(
+        { status: "error", message: "Failed to parse AI response as valid JSON" },
+        { status: 500 }
+      );
+    }
   } catch (error) {
-    console.error("Runtime Error in parse-event:", error);
+    console.error("Critical Runtime Error in parse-event:", error);
     return NextResponse.json(
       { status: "error", message: error.message },
       { status: 500 }

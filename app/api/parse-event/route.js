@@ -23,7 +23,8 @@ export async function POST(req) {
     }
 
     const ai = new GoogleGenAI({ apiKey });
-
+    const modelsToTry = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-pro'];
+    
     const prompt = `Parse the following text and extract event information into JSON format.
     
     Required JSON Schema:
@@ -41,36 +42,45 @@ export async function POST(req) {
     Input Text:
     ${rawCaption}`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: prompt,
-      config: {
-        systemInstruction: "You are a strict, objective Data Extraction Engine. Your sole task is to parse the provided raw text description and map the information into a structured JSON object. Do not judge, filter, or reject the input text based on its theme, category, or relevance. Whether it is an anime event, a general concert, a meeting, or random text, you MUST process it and always return the completed JSON object. If a piece of information is missing, set its value to null (or an empty array [] for performers). Do not invent fake data.",
-        responseMimeType: "application/json",
-        temperature: 0.1,
+    let lastError = null;
+
+    for (const model of modelsToTry) {
+      try {
+        const response = await ai.models.generateContent({
+          model: model,
+          contents: prompt,
+          config: {
+            systemInstruction: "You are a strict, objective Data Extraction Engine. Your sole task is to parse the provided raw text description and map the information into a structured JSON object. Do not judge, filter, or reject the input text based on its theme, category, or relevance. Whether it is an anime event, a general concert, a meeting, or random text, you MUST process it and always return the completed JSON object. If a piece of information is missing, set its value to null (or an empty array [] for performers). Do not invent fake data.",
+            responseMimeType: "application/json",
+            temperature: 0.1,
+          }
+        });
+
+        let text = response.text;
+        
+        if (text) {
+          // Robust Sanitization
+          text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+          const eventData = JSON.parse(text);
+          
+          return NextResponse.json({ 
+            status: "success", 
+            event_data: eventData 
+          });
+        }
+      } catch (err) {
+        lastError = err;
+        console.warn(`Model ${model} failed, trying next candidate...`);
       }
-    });
-
-    let text = response.text;
-    
-    // Safety: Sanitize markdown blocks and trim whitespace
-    if (text) {
-      text = text.replace(/```json/g, "").replace(/```/g, "").trim();
     }
 
-    try {
-      const eventData = JSON.parse(text);
-      return NextResponse.json({ 
-        status: "success", 
-        event_data: eventData 
-      });
-    } catch (parseError) {
-      console.error("JSON Parsing Error in parse-event:", parseError, "Raw response text:", text);
-      return NextResponse.json(
-        { status: "error", message: "Failed to parse AI response as valid JSON" },
-        { status: 500 }
-      );
-    }
+    // If we reach here, all models have failed
+    console.error("All models in the array failed. Final trace:", lastError);
+    return NextResponse.json(
+      { status: "error", message: lastError?.message || "All fallback models failed" },
+      { status: 500 }
+    );
+
   } catch (error) {
     console.error("Runtime Error in parse-event:", error);
     return NextResponse.json(

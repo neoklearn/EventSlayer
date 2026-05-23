@@ -22,16 +22,7 @@ export async function POST(req) {
       );
     }
 
-    const genAI = new GoogleGenAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      systemInstruction: "You are a strict, objective Data Extraction Engine. Your sole task is to parse the provided raw text description and map the information into a structured JSON object. Do not judge, filter, or reject the input text based on its theme, category, or relevance. Whether it is an anime event, a general concert, a meeting, or random text, you MUST process it and always return the completed JSON object. If a piece of information is missing, set its value to null (or an empty array [] for performers). Do not invent fake data."
-    });
-
-    const generationConfig = {
-      responseMimeType: "application/json",
-      temperature: 0.1,
-    };
+    const ai = new GoogleGenAI({ apiKey });
 
     const prompt = `Parse the following text and extract event information into JSON format.
     
@@ -50,16 +41,22 @@ export async function POST(req) {
     Input Text:
     ${rawCaption}`;
 
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig,
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: prompt,
+      config: {
+        systemInstruction: "You are a strict, objective Data Extraction Engine. Your sole task is to parse the provided raw text description and map the information into a structured JSON object. Do not judge, filter, or reject the input text based on its theme, category, or relevance. Whether it is an anime event, a general concert, a meeting, or random text, you MUST process it and always return the completed JSON object. If a piece of information is missing, set its value to null (or an empty array [] for performers). Do not invent fake data.",
+        responseMimeType: "application/json",
+        temperature: 0.1,
+      }
     });
 
-    const response = await result.response;
-    let text = response.text();
+    let text = response.text;
     
-    // Robust JSON Parsing & Sanitization
-    text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    // Safety: Sanitize markdown blocks and trim whitespace
+    if (text) {
+      text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    }
 
     try {
       const eventData = JSON.parse(text);

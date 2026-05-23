@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
@@ -38,6 +40,7 @@ export async function GET(req) {
     const events = await getCachedEvents(isAdmin);
     return NextResponse.json({ status: "success", data: events });
   } catch (error) {
+    console.error("Database Fetch Error in api/events (GET):", error);
     return NextResponse.json(
       { status: "error", message: error.message },
       { status: 500 }
@@ -116,6 +119,7 @@ export async function POST(req) {
     revalidateTag("events-cache");
     return NextResponse.json({ status: "success", data: newEvent });
   } catch (error) {
+    console.error("Database Create Error in api/events (POST):", error);
     return NextResponse.json(
       { status: "error", message: error.message },
       { status: 500 }
@@ -171,6 +175,7 @@ export async function PUT(req) {
     revalidateTag("events-cache");
     return NextResponse.json({ status: "success", data: updatedEvent });
   } catch (error) {
+    console.error("Database Update Error in api/events (PUT):", error);
     return NextResponse.json(
       { status: "error", message: error.message },
       { status: 500 }
@@ -198,6 +203,7 @@ export async function DELETE(req) {
     revalidateTag("events-cache");
     return NextResponse.json({ status: "success", message: "Deleted" });
   } catch (error) {
+    console.error("Database Delete Error in api/events (DELETE):", error);
     return NextResponse.json(
       { status: "error", message: error.message },
       { status: 500 }

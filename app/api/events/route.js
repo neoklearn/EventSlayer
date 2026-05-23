@@ -86,13 +86,13 @@ export async function POST(req) {
     const time = formData.get("time") || "10:00 - 18:00";
     const htm = formData.get("htm") || "Gratis / Belum Tersedia";
     const source_url = formData.get("source_url") || "";
-    const cropX = parseFloat(formData.get("cropX") || "0");
-    const cropY = parseFloat(formData.get("cropY") || "0");
+    const cropX = parseFloat(formData.get("cropX") || "50");
+    const cropY = parseFloat(formData.get("cropY") || "50");
     const posterFile = formData.get("poster");
 
     if (!title || !location_name || !start_date || !end_date) {
       return NextResponse.json(
-        { status: "error", message: "Missing required fields" },
+        { status: "error", message: "Missing required fields: title, location, and dates are mandatory." },
         { status: 400 }
       );
     }
@@ -101,29 +101,30 @@ export async function POST(req) {
 
     const newEvent = await prisma.event.create({
       data: {
-        title,
-        description,
-        location_name,
-        start_date,
-        end_date,
-        time,
-        htm,
-        source_url,
-        cropX,
-        cropY,
-        posterUrl,
-        approved,
+        title: String(title),
+        description: String(description),
+        location_name: String(location_name),
+        start_date: String(start_date),
+        end_date: String(end_date),
+        time: String(time),
+        htm: String(htm),
+        source_url: String(source_url),
+        cropX: Number(cropX),
+        cropY: Number(cropY),
+        posterUrl: posterUrl || "/placeholder.svg",
+        approved: Boolean(approved),
       },
     });
 
     revalidateTag("events-cache");
     return NextResponse.json({ status: "success", data: newEvent });
   } catch (error) {
-    console.error("Database Create Error in api/events (POST):", error);
-    return NextResponse.json(
-      { status: "error", message: error.message },
-      { status: 500 }
-    );
+    console.error("Database Save Error:", error);
+    return NextResponse.json({ 
+      error: "Failed to save event to database", 
+      details: error.message,
+      stack: error.stack 
+    }, { status: 500 });
   }
 }
 

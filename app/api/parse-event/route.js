@@ -42,7 +42,7 @@ export async function POST(req) {
     ${rawCaption}`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-1.5-flash",
       contents: prompt,
       config: {
         systemInstruction: "You are a strict, objective Data Extraction Engine. Your sole task is to parse the provided raw text description and map the information into a structured JSON object. Do not judge, filter, or reject the input text based on its theme, category, or relevance. Whether it is an anime event, a general concert, a meeting, or random text, you MUST process it and always return the completed JSON object. If a piece of information is missing, set its value to null (or an empty array [] for performers). Do not invent fake data.",

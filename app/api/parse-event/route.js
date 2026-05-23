@@ -1,10 +1,18 @@
 import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
 
-const apiKey = process.env.GEMINI_API_KEY;
-
 export async function POST(req) {
   try {
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      console.error("Runtime Error in parse-event: GEMINI_API_KEY is not configured on Vercel");
+      return NextResponse.json(
+        { status: "error", message: "GEMINI_API_KEY is not configured on Vercel" },
+        { status: 500 }
+      );
+    }
+
     const { rawCaption } = await req.json();
 
     if (!rawCaption) {
@@ -14,15 +22,8 @@ export async function POST(req) {
       );
     }
 
-    if (!apiKey) {
-      return NextResponse.json(
-        { status: "error", message: "GEMINI_API_KEY is not configured" },
-        { status: 500 }
-      );
-    }
-
-    const ai = new GoogleGenAI({ apiKey });
-    const model = ai.getGenerativeModel({ 
+    const genAI = new GoogleGenAI(apiKey);
+    const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
       systemInstruction: "You are a strict, objective Data Extraction Engine. Your sole task is to parse the provided raw text description and map the information into a structured JSON object. Do not judge, filter, or reject the input text based on its theme, category, or relevance. Whether it is an anime event, a general concert, a meeting, or random text, you MUST process it and always return the completed JSON object. If a piece of information is missing, set its value to null (or an empty array [] for performers). Do not invent fake data."
     });
@@ -57,7 +58,7 @@ export async function POST(req) {
     const response = await result.response;
     let text = response.text();
     
-    // Robust Sanitization: Strip markdown code blocks and whitespace
+    // Robust JSON Parsing & Sanitization
     text = text.replace(/```json/g, "").replace(/```/g, "").trim();
 
     try {
@@ -67,12 +68,14 @@ export async function POST(req) {
         event_data: eventData 
       });
     } catch (parseError) {
+      console.error("JSON Parsing Error in parse-event:", parseError, "Raw response text:", text);
       return NextResponse.json(
         { status: "error", message: "Failed to parse AI response as valid JSON" },
         { status: 500 }
       );
     }
   } catch (error) {
+    console.error("Runtime Error in parse-event:", error);
     return NextResponse.json(
       { status: "error", message: error.message },
       { status: 500 }
